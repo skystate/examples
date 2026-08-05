@@ -26,11 +26,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: syncnote/package-lock.json
       - run: npm ci
+        working-directory: syncnote
       - run: npm run build
+        working-directory: syncnote
+      # Assemble the Pages site: each example lives under its own subpath.
+      - run: |
+          mkdir -p _site
+          cp -r syncnote/dist _site/syncnote
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

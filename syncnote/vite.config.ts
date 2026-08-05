@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  // Served at https://skystate.github.io/syncnote/
-  base: '/syncnote/',
+  // Served at https://skystate.github.io/examples/syncnote/
+  base: '/examples/syncnote/',
   plugins: [react(), tailwindcss()],
 })
