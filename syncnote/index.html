@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F6F5F2" />
+    <title>syncnote</title>
+    <!--
+      Blocking on purpose, and above the app, so the OS theme is decided before
+      the first paint rather than one React render into it. useTheme takes over
+      afterwards and is the only thing that can override this, once the
+      account's stored preference has loaded. The two colours mirror --color-bg
+      in src/index.css, which is not readable this early.
+    -->
+    <script>
+      ;(function () {
+        var dark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        document.querySelector('meta[name="theme-color"]').content = dark ? '#111113' : '#F6F5F2'
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

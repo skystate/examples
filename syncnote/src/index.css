@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   syncnote design tokens, lifted verbatim from sketches/index.html.
+   Every token below becomes a Tailwind utility (bg-panel, text-ink-2,
+   border-line, rounded-r2, font-serif, and so on). Theme flipping
+   happens by re-assigning the same --color-* variables under
+   [data-theme="dark"], so there are NO dark: variants anywhere.
+   ═══════════════════════════════════════════════════════════ */
+@theme {
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, system-ui, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, ui-serif, serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* light theme (default) */
+  --color-bg: #F6F5F2;
+  --color-panel: #FFFFFF;
+  --color-panel-2: #FBFAF8;
+  --color-ink: #16161A;
+  --color-ink-2: #54545C;
+  --color-ink-3: #8C8C94;
+  --color-line: #E7E5DF;
+  --color-line-2: #F0EEE9;
+  --color-sel: #EFEEE9;
+  --color-accent: #3B6FE0;
+  --color-ok: #3E8F63;
+  --color-warn: #B98524;
+  --color-bad: #C0483C;
+  --color-bad-bg: #FCF1EF;
+
+  --radius-r1: 6px;
+  --radius-r2: 10px;
+  --radius-r3: 14px;
+
+  /* Container-query boundaries. Tailwind's `@max-[N]` compiles to `width < N`,
+     so these are one past the sketch's `max-width: 720px` / `1000px` to mean
+     the same thing. Use @max-mobile / @min-mobile / @max-mid, never literals. */
+  --container-mobile: 721px;
+  --container-mid: 1001px;
+}
+
+/* Unlayered, so it always wins over the `theme` layer that @theme emits. */
+[data-theme="dark"] {
+  --color-bg: #111113;
+  --color-panel: #1A1A1D;
+  --color-panel-2: #161619;
+  --color-ink: #ECEBE8;
+  --color-ink-2: #A2A2A9;
+  --color-ink-3: #6E6E77;
+  --color-line: #2A2A2F;
+  --color-line-2: #232327;
+  --color-sel: #25252A;
+  --color-accent: #7A9CF0;
+  --color-ok: #5FB587;
+  --color-warn: #D2A44A;
+  --color-bad: #E07365;
+  --color-bad-bg: #2A1B1A;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+    /* The app is a fixed shell; only the list and the paper scroll. */
+    overflow: hidden;
+  }
+
+  body {
+    margin: 0;
+    /* Preflight leaves this at the browser's 16px, which silently resizes every
+       unsized string in the app. The sketch's base is 14px / 1.5. */
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background-color: var(--color-bg);
+  }
+
+  /* Tailwind v4 preflight dropped the pointer cursor on buttons; the sketch's
+     reset has it, and every control in this app is a <button>. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+}
+
+/* Syncing indicator pulse, matching .sync[data-s="syncing"] .pip in the sketch.
+   Not named `pulse`: keyframes are one flat global namespace, and Tailwind ships
+   its own `pulse`, which silently wins and fades to .5 instead of .25. */
+@keyframes sync-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Thin scrollbars, matching the sketch. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-ink) 14%, transparent);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
