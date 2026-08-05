@@ -8,7 +8,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SkyStateProvider
       account="acc_aM0X1lKdzWGJJZyj"
-      project="mempad"
+      project="syncnote"
       environment="development"
       callbackUrl={window.location.origin}
     >
