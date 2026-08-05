@@ -9,8 +9,8 @@ createRoot(document.getElementById('root')!).render(
     <SkyStateProvider
       account="acc_aM0X1lKdzWGJJZyj"
       project="syncnote"
-      environment="development"
-      callbackUrl={window.location.origin}
+      environment={import.meta.env.PROD ? 'production' : 'development'}
+      callbackUrl={window.location.origin + import.meta.env.BASE_URL}
     >
       <App />
     </SkyStateProvider>
