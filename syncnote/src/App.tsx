@@ -1,145 +1,328 @@
-import { useCallback, useEffect, useState } from 'react'
-import AppShell from './components/AppShell'
-import LandingPage from './components/LandingPage'
-import { useNotes } from './hooks/useNotes'
-import { useStatus } from '@skystate/react'
+import { useEffect, useRef, useState } from 'react'
+import { useStatus, useUserState } from '@skystate/react'
+import type { UserStateSyncStatus } from '@skystate/react'
 
-// The sketch measured its device frame; the real app container is full-width,
-// so the viewport is the thing to measure against the same 720px boundary.
-const isMobile = () => window.matchMedia('(max-width: 720px)').matches
+type Note = {
+  id: string
+  body: string
+  updatedAt: number
+}
 
-// name → up to two word-initials; else the email's first letter; else empty,
-// which renders a blank avatar. Some providers omit the name claim, and email
-// can be null on others.
+type Theme = 'light' | 'dark'
+
+const title = (note: Note) => note.body.split('\n')[0]?.trim() || 'Note'
+
+const snippet = (note: Note) =>
+  note.body.split('\n').slice(1).join(' ').trim() || 'No additional text'
+
 const initialsFrom = (name: string | null, email: string | null) => {
-  const fromName = (name ?? '')
+  const initials = (name ?? '')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((word) => word[0])
     .join('')
-  return (fromName || email?.[0] || '').toUpperCase()
+  return (initials || email?.[0] || '?').toUpperCase()
+}
+
+function Login({ authenticating, onLogin }: { authenticating: boolean; onLogin: () => void }) {
+  return (
+    <main className="landing">
+      <strong className="wordmark">syncnote</strong>
+      <h1>A notepad that remembers.</h1>
+      <p>Plain-text notes that follow you across devices.</p>
+      <button type="button" disabled={authenticating} onClick={onLogin}>
+        {authenticating ? 'Signing in…' : 'Sign in'}
+      </button>
+    </main>
+  )
+}
+
+type HeaderProps = {
+  initials: string
+  theme: Theme
+  syncStatus: UserStateSyncStatus
+  onToggleTheme: () => void
+  onSignOut: () => void
+}
+
+function Header({ initials, theme, syncStatus, onToggleTheme, onSignOut }: HeaderProps) {
+  const syncLabel =
+    syncStatus === 'syncing' ? 'Saving' : syncStatus === 'synced' ? 'Saved' : 'Not saved yet'
+
+  return (
+    <header className="topbar">
+      <strong className="wordmark">syncnote</strong>
+      <span className={`sync-status ${syncStatus}`}>
+        <span className="sync-dot" aria-hidden="true" />
+        {syncLabel}
+      </span>
+      <button
+        type="button"
+        className="icon-button"
+        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+        onClick={onToggleTheme}
+      >
+        {theme === 'light' ? '☾' : '☀'}
+      </button>
+      <span className="avatar" aria-hidden="true">
+        {initials}
+      </span>
+      <button type="button" className="text-button" onClick={onSignOut}>
+        Sign out
+      </button>
+    </header>
+  )
+}
+
+type NoteListProps = {
+  loading: boolean
+  notes: Note[]
+  selectedId: string | null
+  onCreate: () => void
+  onSelect: (id: string) => void
+  onDelete: (id: string) => void
+}
+
+function NoteList({ loading, notes, selectedId, onCreate, onSelect, onDelete }: NoteListProps) {
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-header">
+        <button
+          type="button"
+          className="new-note-button"
+          aria-label="New note"
+          title="New note"
+          onClick={onCreate}
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16">
+            <path d="M8 3.5v9M3.5 8h9" />
+          </svg>
+        </button>
+      </div>
+
+      {loading && notes.length === 0 ? (
+        <p className="message">Loading…</p>
+      ) : notes.length === 0 ? (
+        <div className="empty-list">
+          <p>Your notes will follow you between devices.</p>
+          <button type="button" onClick={onCreate}>
+            Create your first note
+          </button>
+        </div>
+      ) : (
+        <ul className="note-list">
+          {notes.map((note) => (
+            <li key={note.id} className={note.id === selectedId ? 'selected' : ''}>
+              <button type="button" className="note-link" onClick={() => onSelect(note.id)}>
+                <span className="note-title">{title(note)}</span>
+                <span className="note-snippet">{snippet(note)}</span>
+              </button>
+              <button
+                type="button"
+                className="delete-button"
+                aria-label={`Delete ${title(note)}`}
+                onClick={() => onDelete(note.id)}
+              >
+                <svg aria-hidden="true" viewBox="0 0 16 16">
+                  <path d="M3 4.5h10M6.5 4.5V3.2h3v1.3M4.4 4.5l.5 8.3h6.2l.5-8.3" />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {notes.length > 0 && (
+        <button
+          type="button"
+          className="new-note-fab"
+          aria-label="New note"
+          onClick={onCreate}
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16">
+            <path d="M8 2.8v10.4M2.8 8h10.4" />
+          </svg>
+        </button>
+      )}
+    </aside>
+  )
+}
+
+type EditorProps = {
+  note: Note | null
+  onBack: () => void
+  onChange: (body: string) => void
+  onCreate: () => void
+}
+
+function Editor({ note, onBack, onChange, onCreate }: EditorProps) {
+  const editorRef = useRef<HTMLTextAreaElement>(null)
+  const noteId = note?.id ?? null
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (noteId === null || editor === null) return
+    editor.focus()
+    editor.setSelectionRange(editor.value.length, editor.value.length)
+  }, [noteId])
+
+  if (note === null) {
+    return (
+      <section className="editor empty-editor">
+        <p>Nothing here yet.</p>
+        <button type="button" onClick={onCreate}>
+          New note
+        </button>
+      </section>
+    )
+  }
+
+  return (
+    <section className="editor">
+      <div className="editor-header">
+        <button
+          type="button"
+          className="editor-back"
+          aria-label="Back to notes"
+          onClick={onBack}
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20">
+            <path d="M12 4.5 6.5 10l5.5 5.5" />
+          </svg>
+        </button>
+        <span className="editor-title">{title(note)}</span>
+      </div>
+      <textarea
+        ref={editorRef}
+        aria-label="Note body"
+        placeholder="Start typing. The first line becomes the title."
+        value={note.body}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </section>
+  )
 }
 
 export default function App() {
-  // Hooks run unconditionally, before the auth branch, because the rules of
-  // hooks do not care that the signed-out tree never reads any of this.
+
+  // Ask SkyState for the current auth session and service health so the UI can handle sign-in and connectivity.
   const { auth, health } = useStatus()
-  const { notes, syncStatus, create, update, remove } = useNotes()
+
+  // Keep this user's notes synced through SkyState, starting with an empty list on their first visit.
+  const {
+    value: notes,
+    set: setNotes,
+    syncStatus: notesSyncStatus,
+  } = useUserState<Note[]>('notes', [])
+
+  // Keep this user's theme preference synced through SkyState, defaulting to their system preference.
+  const {
+    value: themeValue,
+    set: setTheme,
+    syncStatus: themeSyncStatus,
+  } = useUserState<Theme>(
+    'theme',
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  )
+
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [mobileView, setMobileView] = useState<'list' | 'editor'>('list')
-  // Bumped only where the editor should take focus; 0 means "do not". The
-  // editor cannot just focus on mount: it remounts per note, including on the
-  // delete and load paths, where stealing focus would pop the mobile keyboard.
-  const [focusTick, setFocusTick] = useState(0)
 
-  const onSelect = useCallback(
-    (id: string) => {
-      setSelectedId(id)
-      // Only mobile has a second view to push; on desktop both are on screen.
-      if (isMobile()) setMobileView('editor')
-      // Mobile deliberately does not take focus: tapping a row is often reading,
-      // and the keyboard would cover the thing you tapped to read.
-      setFocusTick((tick) => (isMobile() ? 0 : tick + 1))
-    },
-    [],
-  )
+  const selectedNote = notes?.find((note) => note.id === selectedId) ?? null
+  const theme = themeValue ?? 'light'
+  const isSyncing = notesSyncStatus === 'syncing' || themeSyncStatus === 'syncing'
 
-  const onCreate = useCallback(() => {
-    setSelectedId(create())
-    if (isMobile()) setMobileView('editor')
-    setFocusTick((tick) => tick + 1)
-  }, [create])
-
-  const onDelete = useCallback(
-    (id: string) => {
-      remove(id)
-      // Deleting what you were reading should land on the newest survivor, not
-      // on nothing. `notes` is sorted by updatedAt desc, so that is the first
-      // one that is not the corpse.
-      setSelectedId((current) =>
-        current === id ? (notes.find((n) => n.id !== id)?.id ?? null) : current,
-      )
-      // Landing on the survivor is not a request to type in it, and the editor
-      // remounts here, so the tick has to be stood down explicitly.
-      setFocusTick(0)
-      setMobileView('list')
-    },
-    [notes, remove],
-  )
-
-  const onBack = useCallback(() => {
-    setMobileView('list')
-  }, [])
-
-  const onChangeBody = useCallback(
-    (body: string) => {
-      if (selectedId !== null) update(selectedId, body)
-    },
-    [selectedId, update],
-  )
-
-  const onSignOut = useCallback(() => {
-    auth.logout()
-  }, [auth])
-
-  // Notes arrive asynchronously from SkyState, so the opening selection cannot
-  // be a lazy useState initialiser. No focus bump: landing on a note should not
-  // pop the mobile keyboard.
   useEffect(() => {
-    if (selectedId === null && notes.length > 0) setSelectedId(notes[0].id)
-  }, [notes, selectedId])
+    document.documentElement.dataset.theme = theme
+  }, [theme])
 
-  // Both shortcuts are already advertised in the UI (the sidebar tooltip and
-  // the empty state hint), so they have to work.
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      // The landing page has no notes to create in, and a selection made
-      // there would outlive the sign-in.
-      if (auth.status !== 'authenticated') return
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'n') {
-        event.preventDefault()
-        onCreate()
-      }
-      if (event.key === 'Escape') {
-        // On mobile the editor covers the list, so Escape is the back button.
-        // Everywhere else it drops focus, which flushes on the way out.
-        if (isMobile() && mobileView === 'editor') onBack()
-        else (document.activeElement as HTMLElement | null)?.blur()
-      }
+    if (!isSyncing) return
+    const preventClose = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = true
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [auth.status, mobileView, onBack, onCreate])
+    window.addEventListener('beforeunload', preventClose)
+    return () => window.removeEventListener('beforeunload', preventClose)
+  }, [isSyncing])
 
-  // This branch is the auth gate. It stands in for what would otherwise be a
-  // separate AuthGate component. The landing page owns nothing auth-shaped:
-  // provider choice lives on SkyState's hosted page, reached via
-  // loginWithRedirect().
+  const createNote = () => {
+    const now = Date.now()
+    const note: Note = {
+      id: crypto.randomUUID(),
+      body: '',
+      updatedAt: now,
+    }
+    setNotes((current) => [...(current ?? []), note])
+    setSelectedId(note.id)
+  }
+
+  const updateNote = (body: string) => {
+    if (selectedId === null) return
+    setNotes((current) =>
+      (current ?? []).map((note) =>
+        note.id === selectedId ? { ...note, body, updatedAt: Date.now() } : note,
+      ),
+    )
+  }
+
+  const deleteNote = (id: string) => {
+    const note = notes?.find((candidate) => candidate.id === id)
+    if (note === undefined || !window.confirm(`Delete “${title(note)}”? This cannot be undone.`)) {
+      return
+    }
+    setNotes((current) => (current ?? []).filter((candidate) => candidate.id !== id))
+    if (selectedId === id) {
+      setSelectedId(null)
+    }
+  }
+
+  const signOut = () => {
+    if (isSyncing && !window.confirm('Changes are still syncing. Sign out anyway?')) return
+    void auth.logout()
+  }
+
   if (auth.status !== 'authenticated') {
     return (
-      <LandingPage
+      <Login
         authenticating={auth.status === 'authenticating'}
-        onLogIn={() => void auth.loginWithRedirect()}
+        onLogin={() => void auth.loginWithRedirect()}
       />
     )
   }
 
   return (
-    <AppShell
-      health={health.status}
-      userInitials={initialsFrom(auth.name, auth.email)}
-      mobileView={mobileView}
-      notes={notes}
-      selectedId={selectedId}
-      syncStatus={syncStatus}
-      focusTick={focusTick}
-      onSelect={onSelect}
-      onCreate={onCreate}
-      onDelete={onDelete}
-      onBack={onBack}
-      onChangeBody={onChangeBody}
-      onSignOut={onSignOut}
-    />
+    <main className="app" data-editor-open={selectedId !== null}>
+      <Header
+        initials={initialsFrom(auth.name, auth.email)}
+        theme={theme}
+        syncStatus={notesSyncStatus}
+        onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        onSignOut={signOut}
+      />
+
+      {health.status === 'error' && (
+        <p className="error" role="alert">
+          SkyState is unavailable. Changes will sync after it reconnects.
+        </p>
+      )}
+
+      <div className="workspace">
+        <NoteList
+          loading={health.status === 'loading'}
+          notes={notes ?? []}
+          selectedId={selectedId}
+          onCreate={createNote}
+          onSelect={setSelectedId}
+          onDelete={deleteNote}
+        />
+        <Editor
+          note={selectedNote}
+          onBack={() => setSelectedId(null)}
+          onChange={updateNote}
+          onCreate={createNote}
+        />
+      </div>
+    </main>
   )
 }

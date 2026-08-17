@@ -6,7 +6,7 @@ Example apps built with [SkyState](https://skystate.dev), a hosted service for r
 
 | Example | Description | Live demo |
 | --- | --- | --- |
-| [syncnote](./syncnote) | A minimal personal notepad that syncs across devices. React, TypeScript, and Tailwind, with auth and persistence handled by SkyState. | [skystate.github.io/examples/syncnote](https://skystate.github.io/examples/syncnote/) |
+| [syncnote](./syncnote) | A minimal React and TypeScript notepad with auth and persistence handled by SkyState. | [skystate.github.io/examples/syncnote](https://skystate.github.io/examples/syncnote/) |
 
 ## Running an example
 
