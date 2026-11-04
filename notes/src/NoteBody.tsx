@@ -77,7 +77,7 @@ export default function NoteBody({ body, onChange }: { body: string; onChange: (
         extensions: [
           history(), drawSelection(), EditorView.lineWrapping,
           placeholder('Start typing. The first line becomes the title.'),
-          EditorView.contentAttributes.of({ 'aria-label': 'Note body', 'aria-describedby': 'note-link-hint', spellcheck: 'true' }),
+          EditorView.contentAttributes.of({ 'aria-label': 'Note body', spellcheck: 'true' }),
           keymap.of([{
             key: 'Mod-Enter',
             run: (editor) => {

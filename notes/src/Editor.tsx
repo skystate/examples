@@ -45,7 +45,6 @@ export default function Editor({ note, loading = false, onBack, onChange, onCrea
       <Suspense fallback={<div className="note-body" aria-label="Loading editor" aria-busy="true" />}>
         <NoteBody key={note.id} body={note.body} onChange={onChange} />
       </Suspense>
-      <p className="editor-hint" id="note-link-hint">Ctrl/Cmd+click to open a link · Ctrl/Cmd+Enter at the cursor</p>
     </section>
   )
 }
