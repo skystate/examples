@@ -1,0 +1,56 @@
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.connection-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.connection-status.syncing .connection-dot,
+.connection-status.connecting .connection-dot {
+  background: var(--warning);
+  animation: pulse 900ms infinite;
+}
+
+.connection-status.synced .connection-dot {
+  background: var(--success);
+}
+
+.connection-status.error .connection-dot {
+  background: var(--danger);
+}
+
+.connection-status.disconnected {
+  color: var(--muted);
+}
+
+.disconnected-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.disconnected-icon circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connection-dot {
+    animation: none !important;
+  }
+}

@@ -2,18 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useStatus, useUserState } from '@skystate/react'
 import type { UserStateSyncStatus } from '@skystate/react'
 
-type Note = {
-  id: string
-  body: string
-  updatedAt: number
-}
-
-type Theme = 'light' | 'dark'
-
-const title = (note: Note) => note.body.split('\n')[0]?.trim() || 'Note'
-
-const snippet = (note: Note) =>
-  note.body.split('\n').slice(1).join(' ').trim() || 'No additional text'
+import Editor from './Editor'
+import Settings from './Settings'
+import { SyncStatus, useBrowserOnline } from './SyncStatus'
+import { useNotesReadiness } from './useNotesReadiness'
+import { useSaveShortcut } from './useSaveShortcut'
+import { useTheme } from './useTheme'
+import type { Note } from './note'
+import { title, snippet } from './note'
 
 const initialsFrom = (name: string | null, email: string | null) => {
   const initials = (name ?? '')
@@ -40,34 +36,22 @@ function Login({ authenticating, onLogin }: { authenticating: boolean; onLogin: 
 
 type HeaderProps = {
   initials: string
-  theme: Theme
+  health: ReturnType<typeof useStatus>['health']
+  online: boolean
   syncStatus: UserStateSyncStatus
-  onToggleTheme: () => void
+  onSettings: () => void
   onSignOut: () => void
 }
 
-function Header({ initials, theme, syncStatus, onToggleTheme, onSignOut }: HeaderProps) {
-  const syncLabel =
-    syncStatus === 'syncing' ? 'Saving' : syncStatus === 'synced' ? 'Saved' : 'Not saved yet'
-
+function Header({ initials, health, online, syncStatus, onSettings, onSignOut }: HeaderProps) {
   return (
     <header className="topbar">
       <strong className="wordmark">notes</strong>
-      <span className={`sync-status ${syncStatus}`}>
-        <span className="sync-dot" aria-hidden="true" />
-        {syncLabel}
-      </span>
-      <button
-        type="button"
-        className="icon-button"
-        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-        onClick={onToggleTheme}
-      >
-        {theme === 'light' ? '☾' : '☀'}
+      <SyncStatus health={health} syncStatus={syncStatus} online={online} />
+      <button type="button" className="text-button" onClick={onSettings}>
+        Settings
       </button>
-      <span className="avatar" aria-hidden="true">
-        {initials}
-      </span>
+      <span className="avatar" aria-hidden="true">{initials}</span>
       <button type="button" className="text-button" onClick={onSignOut}>
         Sign out
       </button>
@@ -76,7 +60,6 @@ function Header({ initials, theme, syncStatus, onToggleTheme, onSignOut }: Heade
 }
 
 type NoteListProps = {
-  loading: boolean
   notes: Note[]
   selectedId: string | null
   onCreate: () => void
@@ -84,13 +67,11 @@ type NoteListProps = {
   onDelete: (id: string) => void
 }
 
-function NoteList({ loading, notes, selectedId, onCreate, onSelect, onDelete }: NoteListProps) {
+function NoteList({ notes, selectedId, onCreate, onSelect, onDelete }: NoteListProps) {
   return (
     <aside className="sidebar">
       <div className="note-list-scroll">
-        {loading && notes.length === 0 ? (
-          <p className="message">Loading…</p>
-        ) : notes.length === 0 ? (
+        {notes.length === 0 ? (
           <div className="empty-list">
             <p>Your notes will follow you between devices.</p>
           </div>
@@ -128,63 +109,7 @@ function NoteList({ loading, notes, selectedId, onCreate, onSelect, onDelete }: 
   )
 }
 
-type EditorProps = {
-  note: Note | null
-  onBack: () => void
-  onChange: (body: string) => void
-  onCreate: () => void
-}
-
-function Editor({ note, onBack, onChange, onCreate }: EditorProps) {
-  const editorRef = useRef<HTMLTextAreaElement>(null)
-  const noteId = note?.id ?? null
-
-  useEffect(() => {
-    const editor = editorRef.current
-    if (noteId === null || editor === null) return
-    editor.focus()
-    editor.setSelectionRange(editor.value.length, editor.value.length)
-  }, [noteId])
-
-  if (note === null) {
-    return (
-      <section className="editor empty-editor">
-        <p>Nothing here yet.</p>
-        <button type="button" onClick={onCreate}>
-          New note
-        </button>
-      </section>
-    )
-  }
-
-  return (
-    <section className="editor">
-      <div className="editor-header">
-        <button
-          type="button"
-          className="editor-back"
-          aria-label="Back to notes"
-          onClick={onBack}
-        >
-          <svg aria-hidden="true" viewBox="0 0 20 20">
-            <path d="M12 4.5 6.5 10l5.5 5.5" />
-          </svg>
-        </button>
-        <span className="editor-title">{title(note)}</span>
-      </div>
-      <textarea
-        ref={editorRef}
-        aria-label="Note body"
-        placeholder="Start typing. The first line becomes the title."
-        value={note.body}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </section>
-  )
-}
-
 export default function App() {
-
   // Ask SkyState for the current auth session and service health so the UI can handle sign-in and connectivity.
   const { auth, health } = useStatus()
 
@@ -195,26 +120,24 @@ export default function App() {
     syncStatus: notesSyncStatus,
   } = useUserState<Note[]>('notes', [])
 
-  // Keep this user's theme preference synced through SkyState, defaulting to their system preference.
-  const {
-    value: themeValue,
-    set: setTheme,
-    syncStatus: themeSyncStatus,
-  } = useUserState<Theme>(
-    'theme',
-    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-  )
+  const { preference, setPreference, syncStatus: themeSyncStatus } = useTheme()
+  const online = useBrowserOnline()
+  const identity = auth.status === 'authenticated' ? String(auth.claims.sub) : null
+  const notesReady = useNotesReadiness(health, identity)
+  const [page, setPage] = useState<'notes' | 'settings'>('notes')
+  useSaveShortcut(auth.status === 'authenticated')
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const initialSelectionHandled = useRef(false)
 
   const selectedNote = notes?.find((note) => note.id === selectedId) ?? null
-  const theme = themeValue ?? 'light'
   const isSyncing = notesSyncStatus === 'syncing' || themeSyncStatus === 'syncing'
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-  }, [theme])
+    setSelectedId(null)
+    setPage('notes')
+    initialSelectionHandled.current = false
+  }, [identity])
 
   useEffect(() => {
     if (initialSelectionHandled.current || !notes?.length) return
@@ -235,6 +158,7 @@ export default function App() {
   }, [isSyncing])
 
   const createNote = () => {
+    if (!notesReady) return
     const now = Date.now()
     const note: Note = {
       id: crypto.randomUUID(),
@@ -283,35 +207,52 @@ export default function App() {
     <main className="app" data-editor-open={selectedId !== null}>
       <Header
         initials={initialsFrom(auth.name, auth.email)}
-        theme={theme}
-        syncStatus={notesSyncStatus}
-        onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        health={health}
+        online={online}
+        syncStatus={isSyncing ? 'syncing' : notesSyncStatus}
+        onSettings={() => setPage('settings')}
         onSignOut={signOut}
       />
 
       {health.status === 'error' && (
         <p className="error" role="alert">
-          SkyState is unavailable. Changes will sync after it reconnects. Error:{' '}
-          {health.error.message} ({health.error.code}).
+          {health.error.code === 'no_response' || health.error.code === 'server_unavailable'
+            ? 'Cannot connect to SkyState. Keep this page open while it retries.'
+            : 'Sync is unavailable. Keep this page open while the problem is resolved.'}
+          {' '}Error: {health.error.message} ({health.error.code}).
         </p>
       )}
 
-      <div className="workspace">
-        <NoteList
-          loading={health.status === 'loading'}
-          notes={notes ?? []}
-          selectedId={selectedId}
-          onCreate={createNote}
-          onSelect={setSelectedId}
-          onDelete={deleteNote}
+      {!notesReady ? (
+        <p className="message" aria-live="polite">
+          {!online ? 'Waiting to connect before loading your notes…'
+            : health.status === 'error' ? 'Unable to load your notes. Keep this page open while SkyState retries.'
+            : 'Loading…'}
+        </p>
+      ) : page === 'settings' ? (
+        <Settings
+          preference={preference}
+          onThemeChange={setPreference}
+          onBack={() => setPage('notes')}
         />
-        <Editor
-          note={selectedNote}
-          onBack={() => setSelectedId(null)}
-          onChange={updateNote}
-          onCreate={createNote}
-        />
-      </div>
+      ) : (
+        <div className="workspace">
+          <NoteList
+            notes={notes ?? []}
+            selectedId={selectedId}
+            onCreate={createNote}
+            onSelect={setSelectedId}
+            onDelete={deleteNote}
+          />
+          <Editor
+            key={selectedId}
+            note={selectedNote}
+            onBack={() => setSelectedId(null)}
+            onChange={updateNote}
+            onCreate={createNote}
+          />
+        </div>
+      )}
     </main>
   )
 }
