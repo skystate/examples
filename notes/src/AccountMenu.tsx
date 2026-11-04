@@ -1,13 +1,21 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import type { ThemePreference } from './useTheme'
 
 type AccountMenuProps = {
   name: string
   email: string | null
-  onSettings: () => void
+  preference: ThemePreference
+  onThemeChange: (preference: ThemePreference) => void
   onSignOut: () => void
 }
 
-export default function AccountMenu({ name, email, onSettings, onSignOut }: AccountMenuProps) {
+const themes = [
+  { value: null, label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+] as const
+
+export default function AccountMenu({ name, email, preference, onThemeChange, onSignOut }: AccountMenuProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -42,11 +50,11 @@ export default function AccountMenu({ name, email, onSettings, onSignOut }: Acco
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
-        onClick={() => { initialItem.current = 0; setOpen(!open) }}
+        onClick={() => { initialItem.current = themes.findIndex((theme) => theme.value === preference); setOpen(!open) }}
         onKeyDown={(event) => {
           if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
           event.preventDefault()
-          initialItem.current = event.key === 'ArrowUp' ? 1 : 0
+          initialItem.current = event.key === 'ArrowUp' ? 3 : 0
           setOpen(true)
         }}
       >
@@ -63,18 +71,42 @@ export default function AccountMenu({ name, email, onSettings, onSignOut }: Acco
             if (event.key === 'Escape') {
               event.preventDefault()
               close()
-            } else if (['ArrowDown', 'ArrowUp', 'Home', 'End', 's', 'S'].includes(event.key)) {
+            } else if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
               event.preventDefault()
               const index = itemsRef.current.indexOf(document.activeElement as HTMLButtonElement)
-              const next = event.key === 'Home' ? 0 : event.key === 'End' ? 1
-                : (index + (event.key === 'ArrowUp' ? -1 : 1) + 2) % 2
+              const next = event.key === 'Home' ? 0 : event.key === 'End' ? 3
+                : (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + 4) % 4
               itemsRef.current[next]?.focus()
             }
           }}>
-            <button ref={(node) => { itemsRef.current[0] = node }} type="button" role="menuitem" tabIndex={-1}
-              onClick={() => { close(); onSettings() }}>Settings</button>
+            <div className="account-theme" role="group" aria-label="Theme">
+              <span aria-hidden="true">Theme</span>
+              <div className="theme-options">
+                {themes.map((theme, index) => (
+                  <button
+                    key={theme.label}
+                    ref={(node) => { itemsRef.current[index] = node }}
+                    type="button"
+                    className="icon-button"
+                    role="menuitemradio"
+                    aria-label={theme.label}
+                    aria-checked={preference === theme.value}
+                    title={theme.label === 'System' ? 'Use device theme' : `${theme.label} theme`}
+                    tabIndex={-1}
+                    onClick={() => onThemeChange(theme.value)}
+                  >
+                    {theme.value === null ? (
+                      <svg aria-hidden="true" viewBox="0 0 20 20">
+                        <rect x="2.5" y="3.5" width="15" height="10" rx="1.5" />
+                        <path d="M10 13.5v3M6.5 16.5h7" />
+                      </svg>
+                    ) : <span aria-hidden="true">{theme.value === 'light' ? '☀' : '☾'}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div role="separator" className="account-divider" />
-            <button ref={(node) => { itemsRef.current[1] = node }} type="button" role="menuitem" tabIndex={-1}
+            <button ref={(node) => { itemsRef.current[3] = node }} type="button" role="menuitem" tabIndex={-1}
               onClick={() => { close(); onSignOut() }}>Sign out</button>
           </div>
         </div>

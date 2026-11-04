@@ -41,16 +41,9 @@ export function SyncStatus({ health, syncStatus, online }: SyncStatusProps) {
     : 'Not saved yet'
 
   return (
-    <span className={`connection-status ${status}`} role="status" aria-live="polite">
-      {disconnected ? (
-        <svg className="disconnected-icon" aria-hidden="true" viewBox="0 0 20 20">
-          <path d="m3 3 14 14M2.5 7a12 12 0 0 1 2.8-1.7M8.2 4.5A12 12 0 0 1 17.5 7M5.2 10a7.5 7.5 0 0 1 3.1-1.4M11.8 8.6a7.5 7.5 0 0 1 3 1.4M8 13a3 3 0 0 1 4 0" />
-          <circle cx="10" cy="16" r="0.75" />
-        </svg>
-      ) : (
-        <span className="connection-dot" aria-hidden="true" />
-      )}
-      <span>{label}</span>
+    <span className={`connection-status ${status}`} role="status" aria-live="polite" title={label}>
+      <span className="connection-dot" aria-hidden="true" />
+      <span className="status-label">{label}</span>
     </span>
   )
 }

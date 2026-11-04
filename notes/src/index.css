@@ -175,6 +175,49 @@ a:focus-visible {
 .account-dropdown button:focus { outline: none; background: var(--selected); }
 .account-divider { height: 1px; margin: 0.375rem; background: var(--line); }
 
+.account-theme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.theme-options {
+  display: flex;
+  gap: 0.125rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 0.125rem;
+}
+
+.theme-options .icon-button {
+  display: grid;
+  width: 2.75rem;
+  min-height: 2.75rem;
+  place-items: center;
+  border-radius: 0.4rem;
+  padding: 0;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.theme-options .icon-button[aria-checked='true'] {
+  color: var(--accent);
+  background: var(--selected);
+}
+
+.theme-options svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
 .delete-button,
 .note-link,
 .editor-back {

@@ -3,12 +3,12 @@ import { useStatus, useUserState } from '@skystate/react'
 import type { UserStateSyncStatus } from '@skystate/react'
 
 import Editor from './Editor'
-import Settings from './Settings'
 import AccountMenu from './AccountMenu'
 import { SyncStatus, useBrowserOnline } from './SyncStatus'
 import { useNotesReadiness } from './useNotesReadiness'
 import { useSaveShortcut } from './useSaveShortcut'
 import { useTheme } from './useTheme'
+import type { ThemePreference } from './useTheme'
 import type { Note } from './note'
 import { title, snippet } from './note'
 
@@ -31,16 +31,23 @@ type HeaderProps = {
   health: ReturnType<typeof useStatus>['health']
   online: boolean
   syncStatus: UserStateSyncStatus
-  onSettings: () => void
+  preference: ThemePreference
+  onThemeChange: (preference: ThemePreference) => void
   onSignOut: () => void
 }
 
-function Header({ name, email, health, online, syncStatus, onSettings, onSignOut }: HeaderProps) {
+function Header({ name, email, health, online, syncStatus, preference, onThemeChange, onSignOut }: HeaderProps) {
   return (
     <header className="topbar">
       <strong className="wordmark">notes</strong>
       <SyncStatus health={health} syncStatus={syncStatus} online={online} />
-      <AccountMenu name={name} email={email} onSettings={onSettings} onSignOut={onSignOut} />
+      <AccountMenu
+        name={name}
+        email={email}
+        preference={preference}
+        onThemeChange={onThemeChange}
+        onSignOut={onSignOut}
+      />
     </header>
   )
 }
@@ -110,7 +117,6 @@ export default function App() {
   const online = useBrowserOnline()
   const identity = auth.status === 'authenticated' ? String(auth.claims.sub) : null
   const notesReady = useNotesReadiness(health, identity)
-  const [page, setPage] = useState<'notes' | 'settings'>('notes')
   useSaveShortcut(auth.status === 'authenticated')
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -121,7 +127,6 @@ export default function App() {
 
   useEffect(() => {
     setSelectedId(null)
-    setPage('notes')
     initialSelectionHandled.current = false
   }, [identity])
 
@@ -197,7 +202,8 @@ export default function App() {
         health={health}
         online={online}
         syncStatus={isSyncing ? 'syncing' : notesSyncStatus}
-        onSettings={() => setPage('settings')}
+        preference={preference}
+        onThemeChange={setPreference}
         onSignOut={signOut}
       />
 
@@ -216,12 +222,6 @@ export default function App() {
             : health.status === 'error' ? 'Unable to load your notes. Keep this page open while SkyState retries.'
             : 'Loading…'}
         </p>
-      ) : page === 'settings' ? (
-        <Settings
-          preference={preference}
-          onThemeChange={setPreference}
-          onBack={() => setPage('notes')}
-        />
       ) : (
         <div className="workspace">
           <NoteList
