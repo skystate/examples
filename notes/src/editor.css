@@ -1,0 +1,48 @@
+.note-toolbar {
+  display: flex;
+  min-height: 3.5rem;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--line);
+  padding: 0.35rem 1.25rem;
+}
+
+.note-toolbar .editor-title { flex: 1; }
+.note-body { flex: 1; min-height: 0; overflow: hidden; }
+.note-body .cm-editor { height: 100%; color: var(--text); }
+.note-body .cm-editor.cm-focused { outline: none; }
+.note-body .cm-scroller {
+  overflow: auto;
+  font-family: Georgia, ui-serif, serif;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.note-body .cm-content { padding: 2.5rem 2rem 50vh; caret-color: var(--text); }
+.note-body .cm-line { padding: 0; }
+.note-body .cm-cursor { border-left-color: var(--text); }
+.note-body .cm-placeholder { color: var(--muted); }
+.note-body .cm-selectionBackground,
+.note-body .cm-focused .cm-selectionBackground { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+.note-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 0.15em; }
+.note-body .cm-content a { cursor: text; }
+.note-body .cm-follow-links .cm-content a { cursor: pointer; }
+.note-body .cm-tooltip {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--panel);
+  box-shadow: 0 4px 16px #0002;
+}
+
+.open-link-tooltip a {
+  display: block;
+  padding: 0.65rem 0.85rem;
+  font: 0.8125rem/1.5 Inter, ui-sans-serif, system-ui, sans-serif;
+  text-decoration: none;
+}
+
+@media (max-width: 700px) {
+  .note-toolbar { padding: 0.25rem; }
+  .note-body .cm-content { padding: 2rem 1.25rem 50vh; }
+}

@@ -1,0 +1,43 @@
+.connection-status {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+.connection-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.connection-status.syncing .connection-dot,
+.connection-status.connecting .connection-dot {
+  background: var(--warning);
+  animation: pulse 900ms infinite;
+}
+
+.connection-status.synced .connection-dot {
+  background: var(--success);
+}
+
+.connection-status.error .connection-dot {
+  background: var(--danger);
+}
+
+.status-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connection-dot {
+    animation: none !important;
+  }
+}
