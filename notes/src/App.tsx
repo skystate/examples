@@ -291,7 +291,8 @@ export default function App() {
 
       {health.status === 'error' && (
         <p className="error" role="alert">
-          SkyState is unavailable. Changes will sync after it reconnects.
+          SkyState is unavailable. Changes will sync after it reconnects. Error:{' '}
+          {health.error.message} ({health.error.code}).
         </p>
       )}
 
