@@ -4,22 +4,13 @@ import type { UserStateSyncStatus } from '@skystate/react'
 
 import Editor from './Editor'
 import Settings from './Settings'
+import AccountMenu from './AccountMenu'
 import { SyncStatus, useBrowserOnline } from './SyncStatus'
 import { useNotesReadiness } from './useNotesReadiness'
 import { useSaveShortcut } from './useSaveShortcut'
 import { useTheme } from './useTheme'
 import type { Note } from './note'
 import { title, snippet } from './note'
-
-const initialsFrom = (name: string | null, email: string | null) => {
-  const initials = (name ?? '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-  return (initials || email?.[0] || '?').toUpperCase()
-}
 
 function Login({ authenticating, onLogin }: { authenticating: boolean; onLogin: () => void }) {
   return (
@@ -35,7 +26,8 @@ function Login({ authenticating, onLogin }: { authenticating: boolean; onLogin: 
 }
 
 type HeaderProps = {
-  initials: string
+  name: string
+  email: string | null
   health: ReturnType<typeof useStatus>['health']
   online: boolean
   syncStatus: UserStateSyncStatus
@@ -43,18 +35,12 @@ type HeaderProps = {
   onSignOut: () => void
 }
 
-function Header({ initials, health, online, syncStatus, onSettings, onSignOut }: HeaderProps) {
+function Header({ name, email, health, online, syncStatus, onSettings, onSignOut }: HeaderProps) {
   return (
     <header className="topbar">
       <strong className="wordmark">notes</strong>
       <SyncStatus health={health} syncStatus={syncStatus} online={online} />
-      <button type="button" className="text-button" onClick={onSettings}>
-        Settings
-      </button>
-      <span className="avatar" aria-hidden="true">{initials}</span>
-      <button type="button" className="text-button" onClick={onSignOut}>
-        Sign out
-      </button>
+      <AccountMenu name={name} email={email} onSettings={onSettings} onSignOut={onSignOut} />
     </header>
   )
 }
@@ -206,7 +192,8 @@ export default function App() {
   return (
     <main className="app" data-editor-open={selectedId !== null}>
       <Header
-        initials={initialsFrom(auth.name, auth.email)}
+        name={auth.name || auth.email || 'Account'}
+        email={auth.email}
         health={health}
         online={online}
         syncStatus={isSyncing ? 'syncing' : notesSyncStatus}

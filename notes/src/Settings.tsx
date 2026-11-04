@@ -29,27 +29,26 @@ export default function Settings({
         </svg>
         Back to notes
       </button>
-      <h1 ref={headingRef} id="settings-title" tabIndex={-1}>Settings</h1>
-      <fieldset className="theme-options" disabled={disabled} aria-describedby="theme-description">
-        <legend>Appearance</legend>
-        <p id="theme-description">Choose a theme. System follows this device’s appearance.</p>
-        {([
-          { value: null, label: 'System' },
-          { value: 'light', label: 'Light' },
-          { value: 'dark', label: 'Dark' },
-        ] as const).map(({ value, label }) => (
-          <label key={label} className="theme-option">
-            <input
-              type="radio"
-              name="theme"
-              value={value ?? 'system'}
-              checked={preference === value}
-              onChange={() => onThemeChange(value)}
-            />
-            <span>{label}</span>
-          </label>
-        ))}
-      </fieldset>
+      <div className="settings-content">
+        <h1 ref={headingRef} id="settings-title" tabIndex={-1}>Settings</h1>
+        <p className="settings-description">Your preferences sync across devices. Changes save automatically.</p>
+        <section className="settings-section" aria-labelledby="appearance-heading">
+          <h2 id="appearance-heading">Appearance</h2>
+          <div className="setting-row">
+            <div>
+              <label htmlFor="theme">Theme</label>
+              <p id="theme-description">Choose light or dark, or match your device.</p>
+            </div>
+            <select id="theme" value={preference ?? 'system'} disabled={disabled}
+              aria-describedby="theme-description"
+              onChange={(event) => onThemeChange(event.target.value === 'system' ? null : event.target.value as ThemePreference)}>
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+        </section>
+      </div>
     </section>
   )
 }

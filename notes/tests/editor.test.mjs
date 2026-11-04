@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { noteLinks } from '../src/noteLinks.ts'
 import { suppressSaveShortcut } from '../src/saveShortcut.ts'
 
-test('preview links HTTP, HTTPS and www addresses without changing note text', () => {
+test('editor links HTTP, HTTPS and www addresses without changing note text', () => {
   const body = 'Links\nhttp://localhost:3000/path https://example.com/?a=1&b=2 www.example.org'
   const segments = noteLinks(body)
   assert.equal(segments.map((segment) => segment.text).join(''), body)
@@ -21,7 +21,7 @@ test('sentence punctuation stays outside links while balanced URL parentheses re
   ])
 })
 
-test('preview never creates links for executable schemes or raw HTML', () => {
+test('editor never creates links for executable schemes or raw HTML', () => {
   const body = '<script>alert(1)</script> javascript:alert(1) data:text/html,alert(1) https://'
   const segments = noteLinks(body)
   assert.equal(segments.map((segment) => segment.text).join(''), body)

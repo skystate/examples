@@ -11,6 +11,9 @@
     "test:browser": "playwright test"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
     "@skystate/react": "^2.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
