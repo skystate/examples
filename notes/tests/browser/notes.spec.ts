@@ -20,7 +20,7 @@ async function backend(page: Page, initialState: State = {}, options: { holdLoad
   })
   await page.route('https://api.skystate.io/**', async (route) => {
     const request = route.request()
-    if (request.url().includes('/public-state/')) {
+    if (request.url().includes('/project-state/')) {
       await route.fulfill({ status: 200, json: { state: {} } })
     } else if (request.url().includes('/user-state/')) {
       if (request.method() === 'GET') {
@@ -284,6 +284,8 @@ test('plain-text editing preserves multiline input, undo and note switching', as
   await expect(page.locator('.cm-content a')).toHaveText('https://example.com/next')
   await editor.press('ControlOrMeta+z')
   await expect(page.locator('.cm-content a')).toHaveCount(0)
+  // Writes are paced, so wait for the undo to reach the server before comparing.
+  await expect.poll(() => api.state().notes?.[0].body).toBe('First note')
   await page.getByRole('button', { name: 'Second note No additional text', exact: true }).click()
   await expect(editor).toHaveText('Second note')
   await page.getByRole('button', { name: /^First note/ }).first().click()

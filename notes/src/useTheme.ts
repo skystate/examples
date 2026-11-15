@@ -7,7 +7,7 @@ export type ThemePreference = Theme | null
 export function useTheme() {
   // A null preference follows this device rather than syncing its appearance.
   const { value: preference, set: setPreference, syncStatus } =
-    useUserState<ThemePreference>('theme', null)
+    useUserState<ThemePreference>('private', 'theme', null)
   const [systemTheme, setSystemTheme] = useState<Theme>(() =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   )
