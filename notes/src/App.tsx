@@ -34,12 +34,18 @@ type HeaderProps = {
   preference: ThemePreference
   onThemeChange: (preference: ThemePreference) => void
   onSignOut: () => void
+  onBack: () => void
 }
 
-function Header({ name, email, health, online, syncStatus, preference, onThemeChange, onSignOut }: HeaderProps) {
+function Header({ name, email, health, online, syncStatus, preference, onThemeChange, onSignOut, onBack }: HeaderProps) {
   return (
     <header className="topbar">
-      <strong className="wordmark">notes</strong>
+      <button type="button" className="editor-back" aria-label="Back to notes" onClick={onBack}>
+        <svg aria-hidden="true" viewBox="0 0 20 20">
+          <path d="M12 4.5 6.5 10l5.5 5.5" />
+        </svg>
+      </button>
+      <button type="button" className="wordmark" onClick={onBack}>notes</button>
       <SyncStatus health={health} syncStatus={syncStatus} online={online} />
       <AccountMenu
         name={name}
@@ -205,6 +211,7 @@ export default function App() {
         preference={preference}
         onThemeChange={setPreference}
         onSignOut={signOut}
+        onBack={() => setSelectedId(null)}
       />
 
       {health.status === 'error' && (
@@ -234,7 +241,6 @@ export default function App() {
           <Editor
             key={selectedId}
             note={selectedNote}
-            onBack={() => setSelectedId(null)}
             onChange={updateNote}
             onCreate={createNote}
           />
