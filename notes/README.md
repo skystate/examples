@@ -36,7 +36,7 @@ npm install
 npm run dev
 ```
 
-The SkyState project configuration lives in `src/main.tsx`. Register your local
+The SkyState project configuration lives in `src/skystate.ts`. Register your local
 callback URL in the SkyState console before replacing that configuration.
 
 ## Build

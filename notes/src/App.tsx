@@ -111,12 +111,12 @@ export default function App() {
     value: notes,
     set: setNotes,
     syncStatus: notesSyncStatus,
-  } = useUserState<Note[]>('notes', [])
+  } = useUserState<Note[]>('private', 'notes', [])
 
   const { preference, setPreference, syncStatus: themeSyncStatus } = useTheme()
   const online = useBrowserOnline()
   const identity = auth.status === 'authenticated' ? String(auth.claims.sub) : null
-  const notesReady = useNotesReadiness(health, identity)
+  const notesReady = useNotesReadiness(identity)
   useSaveShortcut(auth.status === 'authenticated')
 
   const [selectedId, setSelectedId] = useState<string | null>(null)

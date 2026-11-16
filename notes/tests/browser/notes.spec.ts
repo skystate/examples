@@ -20,7 +20,7 @@ async function backend(page: Page, initialState: State = {}, options: { holdLoad
   })
   await page.route('https://api.skystate.io/**', async (route) => {
     const request = route.request()
-    if (request.url().includes('/public-state/')) {
+    if (request.url().includes('/project-state/')) {
       await route.fulfill({ status: 200, json: { state: {} } })
     } else if (request.url().includes('/user-state/')) {
       if (request.method() === 'GET') {
@@ -177,6 +177,8 @@ test('account menu exposes styled theme controls inline and supports keyboard na
   await backend(page, { notes: [{ id: 'one', body: 'My note', updatedAt: 1 }], theme: 'light' })
   await page.goto('./')
   await expect(page.getByRole('status')).toHaveText('Saved')
+  // The editor loads lazily and takes focus when it mounts, which would close the menu.
+  await expect(page.getByRole('textbox', { name: 'Note body' })).toBeFocused()
   const trigger = page.getByRole('button', { name: 'Notes Test', exact: true })
   await expect(page.getByRole('menu')).toHaveCount(0)
   await trigger.focus()
@@ -284,6 +286,8 @@ test('plain-text editing preserves multiline input, undo and note switching', as
   await expect(page.locator('.cm-content a')).toHaveText('https://example.com/next')
   await editor.press('ControlOrMeta+z')
   await expect(page.locator('.cm-content a')).toHaveCount(0)
+  // Writes are paced, so wait for the undo to reach the server before comparing.
+  await expect.poll(() => api.state().notes?.[0].body).toBe('First note')
   await page.getByRole('button', { name: 'Second note No additional text', exact: true }).click()
   await expect(editor).toHaveText('Second note')
   await page.getByRole('button', { name: /^First note/ }).first().click()
