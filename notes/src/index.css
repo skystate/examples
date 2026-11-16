@@ -115,6 +115,11 @@ a:focus-visible {
 
 .wordmark {
   margin-right: auto;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font-weight: 700;
   letter-spacing: 0.1em;
 }
 
@@ -458,8 +463,9 @@ a:focus-visible {
     height: 100%;
   }
 
-  .editor-back {
+  .app[data-editor-open='true'] .editor-back {
     display: flex;
+    margin-left: -0.5rem;
   }
 
   .delete-button {

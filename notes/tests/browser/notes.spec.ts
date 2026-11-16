@@ -323,6 +323,35 @@ test('sidebar and delete label show the title without markdown markers', async (
   await expect(page.getByRole('button', { name: 'Delete Shopping', exact: true }).first()).toBeAttached()
 })
 
+test('the editor has no bar above the note', async ({ page }) => {
+  await backend(page, { notes: [{ id: 'one', body: '# Shopping\nmilk', updatedAt: 1 }] })
+  await page.goto('./')
+  await expect(page.locator('.cm-content')).toContainText('Shopping')
+  await expect(page.locator('.note-toolbar')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Back to notes' })).toBeHidden()
+})
+
+test('on a narrow screen the back button sits in the top bar and returns to the list', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 320, height: 844 }, hasTouch: true, isMobile: true })
+  const page = await context.newPage()
+  await backend(page, { notes: [{ id: 'one', body: '# Shopping\nmilk', updatedAt: 1 }] })
+  await page.goto('./')
+  const back = page.locator('.topbar').getByRole('button', { name: 'Back to notes' })
+  await expect(back).toBeHidden()
+  await page.locator('.note-link').tap()
+  await expect(page.locator('.cm-content')).toContainText('Shopping')
+  await expect(page.locator('.note-toolbar')).toHaveCount(0)
+  await back.tap()
+  await expect(page.locator('.note-link')).toBeVisible()
+  await expect(back).toBeHidden()
+  await page.locator('.note-link').tap()
+  await expect(page.locator('.cm-content')).toContainText('Shopping')
+  await page.locator('.topbar').getByRole('button', { name: 'notes', exact: true }).tap()
+  await expect(page.locator('.note-link')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320)
+  await context.close()
+})
+
 test('clicking a checklist box flips its marker in the saved note', async ({ page }) => {
   const api = await backend(page, { notes: [{ id: 'one', body: 'List\n- [ ] milk\n- [x] eggs\nend', updatedAt: 1 }] })
   await page.goto('./')
