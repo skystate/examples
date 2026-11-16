@@ -177,6 +177,8 @@ test('account menu exposes styled theme controls inline and supports keyboard na
   await backend(page, { notes: [{ id: 'one', body: 'My note', updatedAt: 1 }], theme: 'light' })
   await page.goto('./')
   await expect(page.getByRole('status')).toHaveText('Saved')
+  // The editor loads lazily and takes focus when it mounts, which would close the menu.
+  await expect(page.getByRole('textbox', { name: 'Note body' })).toBeFocused()
   const trigger = page.getByRole('button', { name: 'Notes Test', exact: true })
   await expect(page.getByRole('menu')).toHaveCount(0)
   await trigger.focus()
