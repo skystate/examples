@@ -3,9 +3,10 @@ export type NoteSegment = { text: string; href?: string }
 const punctuation = '.,!?;:'
 const emphasisMarkers = '*_~'
 
-// A wrapped URL (emphasis marker directly before it) also loses trailing emphasis markers.
-function trimPunctuation(candidate: string, wrapped: boolean) {
-  const trailing = new RegExp(`[${wrapped ? punctuation + emphasisMarkers : punctuation}]+$`)
+// A trailing emphasis marker is dropped only if the line has the same character before the URL.
+function trimPunctuation(candidate: string, lineBefore: string) {
+  const usedMarkers = [...emphasisMarkers].filter((marker) => lineBefore.includes(marker))
+  const trailing = new RegExp(`[${punctuation}${usedMarkers.join('')}]+$`)
   let value = candidate.replace(trailing, '')
   const brackets = [['(', ')'], ['[', ']'], ['{', '}']]
   while (brackets.some(([open, close]) =>
@@ -23,8 +24,9 @@ export function noteLinks(body: string): NoteSegment[] {
   let offset = 0
 
   for (const match of matches) {
-    const wrapped = match.index > 0 && emphasisMarkers.includes(body[match.index - 1])
-    const text = trimPunctuation(match[0], wrapped)
+    const lineStart = body.lastIndexOf('\n', match.index) + 1
+    const lineBefore = body.slice(lineStart, match.index)
+    const text = trimPunctuation(match[0], lineBefore)
     const href = /^www\./i.test(text) ? `https://${text}` : text
     try {
       const url = new URL(href)

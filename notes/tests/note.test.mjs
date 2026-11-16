@@ -58,3 +58,25 @@ test('a URL that is not wrapped keeps its trailing marker characters', () => {
     assert.deepEqual(links(`see ${url} now`).map((link) => link.href), [url])
   }
 })
+
+test('title strips nested emphasis markers', () => {
+  assert.equal(title(note('***important***')), 'important')
+  assert.equal(title(note('**bold *it* more**')), 'bold it more')
+  assert.equal(title(note('~~**x**~~')), 'x')
+})
+
+test('a heading loses its closing "#" run', () => {
+  assert.equal(title(note('# Title #')), 'Title')
+  assert.equal(title(note('## a ##')), 'a')
+  assert.equal(title(note('# C#')), 'C#')
+  assert.equal(title(note('Issue #')), 'Issue #')
+})
+
+test('a URL loses a trailing marker only when the line used that marker before it', () => {
+  const href = (body) => links(body).map((link) => link.href)
+  assert.deepEqual(href('**see https://example.com**'), ['https://example.com'])
+  assert.deepEqual(href('*docs: https://example.com/a*'), ['https://example.com/a'])
+  assert.deepEqual(href('**https://example.com/file_**'), ['https://example.com/file_'])
+  assert.deepEqual(href('**https://x.com**.'), ['https://x.com'])
+  assert.deepEqual(href('*intro*\nsee https://example.com/a*'), ['https://example.com/a*'])
+})
