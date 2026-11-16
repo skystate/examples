@@ -17,7 +17,7 @@ function Login({ authenticating, onLogin }: { authenticating: boolean; onLogin: 
     <main className="landing">
       <strong className="wordmark">notes</strong>
       <h1>A notepad that remembers.</h1>
-      <p>Plain-text notes that follow you across devices.</p>
+      <p>Markdown notes that follow you across devices.</p>
       <button type="button" disabled={authenticating} onClick={onLogin}>
         {authenticating ? 'Signing in…' : 'Sign in'}
       </button>

@@ -1,12 +1,12 @@
 export type NoteSegment = { text: string; href?: string }
 
 function trimPunctuation(candidate: string) {
-  let value = candidate.replace(/[.,!?;:]+$/, '')
+  let value = candidate.replace(/[.,!?;:*_~]+$/, '')
   const brackets = [['(', ')'], ['[', ']'], ['{', '}']]
   while (brackets.some(([open, close]) =>
     value.endsWith(close) && value.split(close).length > value.split(open).length,
   )) {
-    value = value.slice(0, -1).replace(/[.,!?;:]+$/, '')
+    value = value.slice(0, -1).replace(/[.,!?;:*_~]+$/, '')
   }
   return value
 }

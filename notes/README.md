@@ -13,11 +13,17 @@ const { value: preference, set: setPreference } =
   useUserState<'light' | 'dark' | null>('theme', null)
 ```
 
-The demo supports multiple plain-text notes, automatic syncing, and inline
+The demo supports multiple markdown notes, automatic syncing, and inline
 HTTP(S)/www links while editing. Ctrl+click (Cmd+click on macOS) opens a link in
 a new tab; Ctrl/Cmd+Enter opens the link at the cursor. Selecting a URL also
 shows an Open link action for touch and keyboard users. CodeMirror provides
-plain-text editing, selection, and undo without storing HTML.
+editing, selection, and undo without storing HTML.
+
+Each note is stored as one markdown string. The editor styles headings, bold,
+italic, strikethrough, lists and quotes while you type. The `#`, `**`, `*`, `_`
+and `~~` markers are hidden on lines that do not hold the cursor. `- [ ]` and
+`- [x]` show as checkboxes you can click. Enter continues a list or checklist,
+and Enter on an empty item ends it.
 
 The account menu under your name contains Settings and Sign out. Settings offers
 System, Light, and Dark appearance; a null preference follows live OS theme
