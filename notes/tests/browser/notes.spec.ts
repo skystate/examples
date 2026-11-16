@@ -107,7 +107,7 @@ test('failed first load shows disconnected without empty-state creation', async 
   await expect(page.getByRole('button', { name: 'New note', exact: true })).toHaveCount(0)
 })
 
-test('URLs are linked during editing and HTML remains plain text', async ({ page }) => {
+test('URLs are linked during editing and HTML is never rendered', async ({ page }) => {
   const body = 'Links\nSee https://example.com/docs?q=1&x=2 and www.example.org.\n<script>alert(1)</script> javascript:alert(1)'
   await backend(page, { notes: [{ id: 'one', body, updatedAt: 1 }] })
   await page.goto('./')
@@ -272,7 +272,7 @@ test('touch users open links without a modifier and header controls fit a narrow
   await context.close()
 })
 
-test('plain-text editing preserves multiline input, undo and note switching', async ({ page }) => {
+test('editing preserves multiline input, undo and note switching', async ({ page }) => {
   const api = await backend(page, { notes: [
     { id: 'one', body: 'First note', updatedAt: 1 },
     { id: 'two', body: 'Second note', updatedAt: 1 },
@@ -292,4 +292,85 @@ test('plain-text editing preserves multiline input, undo and note switching', as
   await expect(editor).toHaveText('Second note')
   await page.getByRole('button', { name: /^First note/ }).first().click()
   await expect.poll(async () => (await editor.locator('.cm-line').allTextContents()).join('\n')).toBe(api.state().notes?.[0].body)
+})
+
+const lineTexts = (page: Page) => page.locator('.cm-content .cm-line').allTextContents()
+
+test('markdown is styled and markers show only on the cursor line', async ({ page }) => {
+  const body = '# Shopping\nSome **bold** and ~~old~~ text\n# Title #\nlast'
+  const api = await backend(page, { notes: [{ id: 'one', body, updatedAt: 1 }] })
+  await page.goto('./')
+  const editor = page.getByRole('textbox', { name: 'Note body' })
+  await expect.poll(() => lineTexts(page)).toEqual(['Shopping', 'Some bold and old text', 'Title', 'last'])
+  const heading = editor.getByText('Shopping', { exact: true })
+  await expect(heading).toHaveCSS('font-weight', '700')
+  const size = (text: string) => editor.getByText(text, { exact: true }).evaluate((node) => parseFloat(getComputedStyle(node).fontSize))
+  expect(await size('Shopping')).toBeGreaterThan(await size('last'))
+  await expect(editor.getByText('bold', { exact: true })).toHaveCSS('font-weight', '700')
+  await expect(editor.getByText('old', { exact: true })).toHaveCSS('text-decoration-line', 'line-through')
+  await heading.click()
+  await expect.poll(() => lineTexts(page)).toEqual(['# Shopping', 'Some bold and old text', 'Title', 'last'])
+  await editor.getByText('bold', { exact: true }).click()
+  await expect.poll(() => lineTexts(page)).toEqual(['Shopping', 'Some **bold** and ~~old~~ text', 'Title', 'last'])
+  expect(api.state().notes?.[0].body).toBe(body)
+})
+
+test('sidebar, header and delete label show the title without markdown markers', async ({ page }) => {
+  await backend(page, { notes: [{ id: 'one', body: '# Shopping\n- [ ] **milk**', updatedAt: 1 }] })
+  await page.goto('./')
+  await expect(page.locator('.note-title')).toHaveText('Shopping')
+  await expect(page.locator('.note-snippet')).toHaveText('milk')
+  await expect(page.locator('.editor-title')).toHaveText('Shopping')
+  await expect(page.getByRole('button', { name: 'Delete Shopping', exact: true }).first()).toBeAttached()
+})
+
+test('clicking a checklist box flips its marker in the saved note', async ({ page }) => {
+  const api = await backend(page, { notes: [{ id: 'one', body: 'List\n- [ ] milk\n- [x] eggs\nend', updatedAt: 1 }] })
+  await page.goto('./')
+  const boxes = page.locator('.cm-content input[type=checkbox]')
+  await expect(boxes).toHaveCount(2)
+  await expect(boxes.first()).not.toBeChecked()
+  await expect(boxes.last()).toBeChecked()
+  await boxes.first().click()
+  await expect.poll(() => api.state().notes?.[0].body).toBe('List\n- [x] milk\n- [x] eggs\nend')
+  await expect(boxes.first()).toBeChecked()
+  await boxes.last().click()
+  await expect.poll(() => api.state().notes?.[0].body).toBe('List\n- [x] milk\n- [ ] eggs\nend')
+  await expect(boxes.last()).not.toBeChecked()
+})
+
+test('Space on a focused checklist box flips its marker in the saved note', async ({ page }) => {
+  const api = await backend(page, { notes: [{ id: 'one', body: 'List\n- [ ] milk', updatedAt: 1 }] })
+  await page.goto('./')
+  const box = page.locator('.cm-content input[type=checkbox]')
+  await box.focus()
+  await page.keyboard.press('Space')
+  await expect.poll(() => api.state().notes?.[0].body).toBe('List\n- [x] milk')
+  await expect(box).toBeChecked()
+})
+
+test('Enter continues a list or checklist and ends it on an empty item', async ({ page }) => {
+  const api = await backend(page, { notes: [{ id: 'one', body: 'List\n- [x] milk', updatedAt: 1 }] })
+  await page.goto('./')
+  const editor = page.getByRole('textbox', { name: 'Note body' })
+  await editor.press('ControlOrMeta+End')
+  await editor.press('Enter')
+  await page.keyboard.insertText('eggs')
+  await expect.poll(() => api.state().notes?.[0].body).toBe('List\n- [x] milk\n- [ ] eggs')
+  await editor.press('Enter')
+  await editor.press('Enter')
+  await page.keyboard.insertText('done')
+  await expect.poll(() => api.state().notes?.[0].body).toBe('List\n- [x] milk\n- [ ] eggs\ndone')
+  await editor.fill('- one')
+  await editor.press('Enter')
+  await page.keyboard.insertText('two')
+  await expect.poll(() => api.state().notes?.[0].body).toBe('- one\n- two')
+})
+
+test('a URL wrapped in bold markers links to the bare address', async ({ page }) => {
+  await backend(page, { notes: [{ id: 'one', body: 'Link\n**https://x.com** end', updatedAt: 1 }] })
+  await page.goto('./')
+  await expect(page.locator('.cm-content a')).toHaveCount(1)
+  await expect(page.locator('.cm-content a')).toHaveAttribute('href', 'https://x.com')
+  await expect(page.locator('.cm-content a')).toHaveText('https://x.com')
 })

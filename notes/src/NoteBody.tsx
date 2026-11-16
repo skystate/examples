@@ -4,6 +4,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { Decoration, EditorView, ViewPlugin, drawSelection, keymap, placeholder, showTooltip } from '@codemirror/view'
 import type { DecorationSet, ViewUpdate } from '@codemirror/view'
 import { noteLinks } from './noteLinks'
+import { noteMarkdown } from './noteMarkdown'
 
 const externalChange = Annotation.define<boolean>()
 
@@ -87,7 +88,7 @@ export default function NoteBody({ body, onChange }: { body: string; onChange: (
               return true
             },
           }, ...defaultKeymap, ...historyKeymap]),
-          linkMarks, linkTooltip,
+          noteMarkdown, linkMarks, linkTooltip,
           EditorView.domEventHandlers({
             mousedown: (event) => {
               if ((event.ctrlKey || event.metaKey) && (event.target as Element).closest('a')) {
