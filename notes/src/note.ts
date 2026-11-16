@@ -4,14 +4,23 @@ export type Note = {
   updatedAt: number
 }
 
-// Drop the markdown markers the editor hides or styles, so lists show plain text.
-const plain = (line: string) => line
-  .replace(/^\s*(?:#{1,6}\s+|#{1,6}$|>\s*)/, '')
-  .replace(/^\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?/, '')
-  .replace(/(\*\*|__|~~)(?=\S)(.+?)\1/g, '$2')
-  .replace(/\*(?=\S)(.+?)\*/g, '$1')
-  .replace(/(?<!\w)_(?=\S)(.+?)_(?!\w)/g, '$1')
-  .trim()
+// One heading "#" run, bullet (with optional checkbox) or quote ">" at the line start.
+const blockPrefix = /^\s*(?:#{1,6}(?:\s+|$)|[-*+]\s+(?:\[[ xX]\]\s+)?|>\s*)/
+// A matched marker pair hugging non-space text; "_" pairs only at word boundaries.
+const starOrTildePair = /(\*\*|~~|\*)(?=\S)(.+?)(?<=\S)\1/g
+const underscorePair = /(?<!\w)(__|_)(?=\S)(.+?)(?<=\S)\1(?!\w)/g
+const codeSpan = /(`[^`]*`)/
+
+const withoutEmphasis = (text: string) =>
+  text.replace(starOrTildePair, '$2').replace(underscorePair, '$2')
+
+// Drop one block prefix, then paired emphasis markers outside backticks.
+function plain(line: string) {
+  const parts = line.replace(blockPrefix, '').split(codeSpan)
+  // The capture group puts each code span at an odd index.
+  const stripped = parts.map((part, index) => (index % 2 === 1 ? part : withoutEmphasis(part)))
+  return stripped.join('').trim()
+}
 
 export const title = (note: Note) => plain(note.body.split('\n')[0] ?? '') || 'Note'
 

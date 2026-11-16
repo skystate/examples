@@ -297,11 +297,11 @@ test('editing preserves multiline input, undo and note switching', async ({ page
 const lineTexts = (page: Page) => page.locator('.cm-content .cm-line').allTextContents()
 
 test('markdown is styled and markers show only on the cursor line', async ({ page }) => {
-  const body = '# Shopping\nSome **bold** and ~~old~~ text\nlast'
+  const body = '# Shopping\nSome **bold** and ~~old~~ text\n# Title #\nlast'
   const api = await backend(page, { notes: [{ id: 'one', body, updatedAt: 1 }] })
   await page.goto('./')
   const editor = page.getByRole('textbox', { name: 'Note body' })
-  await expect.poll(() => lineTexts(page)).toEqual(['Shopping', 'Some bold and old text', 'last'])
+  await expect.poll(() => lineTexts(page)).toEqual(['Shopping', 'Some bold and old text', 'Title', 'last'])
   const heading = editor.getByText('Shopping', { exact: true })
   await expect(heading).toHaveCSS('font-weight', '700')
   const size = (text: string) => editor.getByText(text, { exact: true }).evaluate((node) => parseFloat(getComputedStyle(node).fontSize))
@@ -309,9 +309,9 @@ test('markdown is styled and markers show only on the cursor line', async ({ pag
   await expect(editor.getByText('bold', { exact: true })).toHaveCSS('font-weight', '700')
   await expect(editor.getByText('old', { exact: true })).toHaveCSS('text-decoration-line', 'line-through')
   await heading.click()
-  await expect.poll(() => lineTexts(page)).toEqual(['# Shopping', 'Some bold and old text', 'last'])
+  await expect.poll(() => lineTexts(page)).toEqual(['# Shopping', 'Some bold and old text', 'Title', 'last'])
   await editor.getByText('bold', { exact: true }).click()
-  await expect.poll(() => lineTexts(page)).toEqual(['Shopping', 'Some **bold** and ~~old~~ text', 'last'])
+  await expect.poll(() => lineTexts(page)).toEqual(['Shopping', 'Some **bold** and ~~old~~ text', 'Title', 'last'])
   expect(api.state().notes?.[0].body).toBe(body)
 })
 
@@ -337,6 +337,16 @@ test('clicking a checklist box flips its marker in the saved note', async ({ pag
   await boxes.last().click()
   await expect.poll(() => api.state().notes?.[0].body).toBe('List\n- [x] milk\n- [ ] eggs\nend')
   await expect(boxes.last()).not.toBeChecked()
+})
+
+test('Space on a focused checklist box flips its marker in the saved note', async ({ page }) => {
+  const api = await backend(page, { notes: [{ id: 'one', body: 'List\n- [ ] milk', updatedAt: 1 }] })
+  await page.goto('./')
+  const box = page.locator('.cm-content input[type=checkbox]')
+  await box.focus()
+  await page.keyboard.press('Space')
+  await expect.poll(() => api.state().notes?.[0].body).toBe('List\n- [x] milk')
+  await expect(box).toBeChecked()
 })
 
 test('Enter continues a list or checklist and ends it on an empty item', async ({ page }) => {

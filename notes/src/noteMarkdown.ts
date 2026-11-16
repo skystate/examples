@@ -14,7 +14,6 @@ const styles = HighlightStyle.define([
   { tag: tags.emphasis, class: 'md-emphasis' },
   { tag: tags.strikethrough, class: 'md-strike' },
   { tag: tags.monospace, class: 'md-code' },
-  { tag: tags.quote, class: 'md-quote' },
   { tag: tags.processingInstruction, class: 'md-mark' },
 ])
 
@@ -46,6 +45,16 @@ function selectionTouchesLine(state: EditorState, position: number) {
   return state.selection.ranges.some((range) => range.from <= line.to && range.to >= line.from)
 }
 
+// The opening # run with the space after it, or the closing # run with the space before it.
+function headerMarkRange(state: EditorState, from: number, to: number, opening: boolean) {
+  if (opening) {
+    const spaceAfter = state.sliceDoc(to, to + 1) === ' '
+    return hidden.range(from, spaceAfter ? to + 1 : to)
+  }
+  const spaceBefore = state.sliceDoc(from - 1, from) === ' '
+  return hidden.range(spaceBefore ? from - 1 : from, to)
+}
+
 function build(view: EditorView) {
   const { state } = view
   const ranges: Range<Decoration>[] = []
@@ -61,9 +70,10 @@ function build(view: EditorView) {
         }
         if (selectionTouchesLine(state, node.from)) return
         if (hiddenMarks.includes(node.name)) ranges.push(hidden.range(node.from, node.to))
-        // Only the leading # of a heading: hide it together with the space after it.
-        if (node.name === 'HeaderMark' && state.sliceDoc(node.to, node.to + 1) === ' ') {
-          ranges.push(hidden.range(node.from, node.to + 1))
+        // Setext headings keep their underline; only ATX # runs are hidden.
+        const heading = node.name === 'HeaderMark' ? node.node.parent : null
+        if (heading?.name.startsWith('ATXHeading')) {
+          ranges.push(headerMarkRange(state, node.from, node.to, node.from === heading.from))
         }
       },
     })
@@ -84,7 +94,7 @@ const markers = ViewPlugin.fromClass(class {
   decorations: (plugin) => plugin.decorations,
   provide: (plugin) => EditorView.atomicRanges.of((view) => view.plugin(plugin)?.decorations ?? Decoration.none),
   eventHandlers: {
-    mousedown: (event, view) => {
+    click: (event, view) => {
       const box = event.target as HTMLElement
       if (!box.matches('.md-task input')) return false
       const position = view.posAtDOM(box) + 1
