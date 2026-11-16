@@ -315,12 +315,11 @@ test('markdown is styled and markers show only on the cursor line', async ({ pag
   expect(api.state().notes?.[0].body).toBe(body)
 })
 
-test('sidebar, header and delete label show the title without markdown markers', async ({ page }) => {
+test('sidebar and delete label show the title without markdown markers', async ({ page }) => {
   await backend(page, { notes: [{ id: 'one', body: '# Shopping\n- [ ] **milk**', updatedAt: 1 }] })
   await page.goto('./')
   await expect(page.locator('.note-title')).toHaveText('Shopping')
   await expect(page.locator('.note-snippet')).toHaveText('milk')
-  await expect(page.locator('.editor-title')).toHaveText('Shopping')
   await expect(page.getByRole('button', { name: 'Delete Shopping', exact: true }).first()).toBeAttached()
 })
 

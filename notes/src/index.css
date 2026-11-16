@@ -426,17 +426,6 @@ a:focus-visible {
   stroke-width: 1.7;
 }
 
-.editor-title {
-  min-width: 0;
-  overflow: hidden;
-  cursor: default;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  user-select: none;
-  white-space: nowrap;
-}
-
 @media (max-width: 700px) {
   .topbar {
     flex-wrap: wrap;
