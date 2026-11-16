@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import type { Note } from './note'
-import { title } from './note'
 import './editor.css'
 
 const NoteBody = lazy(() => import('./NoteBody'))
@@ -40,7 +39,6 @@ export default function Editor({ note, loading = false, onBack, onChange, onCrea
             <path d="M12 4.5 6.5 10l5.5 5.5" />
           </svg>
         </button>
-        <span className="editor-title">{title(note)}</span>
       </div>
       <Suspense fallback={<div className="note-body" aria-label="Loading editor" aria-busy="true" />}>
         <NoteBody key={note.id} body={note.body} onChange={onChange} />
